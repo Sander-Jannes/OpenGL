@@ -9,14 +9,49 @@ PointLight::PointLight() : Light()
 	exponent = 0.0f;
 }
 
-PointLight::PointLight(GLfloat red, GLfloat green, GLfloat blue, GLfloat aIntensity, GLfloat dIntensity,
+PointLight::PointLight(GLuint shadowWidth, GLuint shadowHeight,
+						GLfloat near, GLfloat far,
+						GLfloat red, GLfloat green, GLfloat blue, GLfloat aIntensity, GLfloat dIntensity,
 						GLfloat xPos, GLfloat yPos, GLfloat zPos,
-						GLfloat con, GLfloat lin, GLfloat exp) : Light(1024, 1024, red, green, blue, aIntensity, dIntensity)
+						GLfloat con, GLfloat lin, GLfloat exp) : Light(shadowWidth, shadowHeight, red, green, blue, aIntensity, dIntensity)
 {
 	position = glm::vec3(xPos, yPos, zPos);
 	constant = con;
 	linear = lin;
 	exponent = exp;
+
+	farPlane = far;
+
+	float aspect = (float)shadowWidth / (float)shadowHeight;
+	lightProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
+
+	shadowMap = new OmniShadowMap();
+	shadowMap->init(shadowWidth, shadowHeight);
+}
+
+GLfloat PointLight::getFarPlane()
+{
+	return farPlane;
+}
+
+glm::vec3 PointLight::getPosition()
+{
+	return position;
+}
+
+std::vector<glm::mat4> PointLight::CalculateLightTransform()
+{
+	std::vector<glm::mat4> lightMatrices;
+	lightMatrices.push_back(lightProj * glm::lookAt(position, position + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+	lightMatrices.push_back(lightProj * glm::lookAt(position, position + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+
+	lightMatrices.push_back(lightProj * glm::lookAt(position, position + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+	lightMatrices.push_back(lightProj * glm::lookAt(position, position + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+
+	lightMatrices.push_back(lightProj * glm::lookAt(position, position + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+	lightMatrices.push_back(lightProj * glm::lookAt(position, position + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+
+	return lightMatrices;
 }
 
 void PointLight::useLight(GLuint ambientIntensityLocation, GLuint ambientColorLocation,

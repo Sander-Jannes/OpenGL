@@ -21,6 +21,8 @@ public:
 	Shader();
 	void CreateFromString(const char* vertexCode, const char* fragmentCode);
 	void CreateFromFiles(const char* vertexLocation, const char* fragmentLocation);
+	void CreateFromFiles(const char* vertexLocation, const char* geometryLocation, const char* fragmentLocation);
+
 
 	std::string ReadFile(const char* fileLocation);
 	GLuint GetProjectionLocation();
@@ -33,6 +35,8 @@ public:
 	GLuint GetSpecularIntensityLocation();
 	GLuint GetShininessLocation();
 	GLuint GetEyePositionLocation();
+	GLuint GetOmniLightPosLocation();
+	GLuint GetFarPlaneLocation();
 
 	void setDirectionalLight(DirectionalLight* light);
 	void setPointLights(PointLight* pLight, unsigned int lightCount);
@@ -40,6 +44,7 @@ public:
 	void SetTexture(GLuint textureUnit);
 	void SetDirectionalShadowMap(GLuint textureUnit);
 	void SetDirectionalLightTransform(glm::mat4* lTransform);
+	void SetLightMatrices(std::vector<glm::mat4> lightMatrices);
 	
 	void UseShader();
 	void ClearShader();
@@ -51,7 +56,10 @@ private:
 
 
 	GLuint shaderID, uniformProjection, uniformModel, uniformView, uniformEyePosition, uniformSpecularIntensity, uniformShininess,
-		uniformDirectionalLightTransform, uniformDirectionalShadowMap, uniformTexture;
+		uniformDirectionalLightTransform, uniformDirectionalShadowMap, uniformTexture, uniformOmniLightPos, uniformFarPlane;
+
+
+	GLuint uniformLightMatrices[6];
 
 
 	struct {
@@ -94,5 +102,8 @@ private:
 
 
 	void CompileShader(const char* vertexCode, const char* fragmentCode);
+	void CompileShader(const char* vertexCode, const char* geometryCode, const char* fragmentCode);
 	void AddShader(GLuint program, const char* shaderCode, GLenum shaderType);
+
+	void compilePromgram();
 };

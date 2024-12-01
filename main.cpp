@@ -28,13 +28,14 @@ const float toRadians = 3.14159265f / 180.0f;
 
 GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
 uniformSpecularIntensity = 0, uniformShininess = 0,
-uniformDirectionalLightTransform = 0;
+uniformDirectionalLightTransform = 0, uniformOmniLightPos = 0, uniformFarPlane = 0;
 
 Window mainWindow;
 std::vector<Mesh*> meshList;
 
 std::vector<Shader> shaderList;
 Shader directionalShadowShader;
+Shader omniShadowShader;
 
 Camera camera;
 
@@ -143,6 +144,7 @@ void CreateShaders()
 	shaderList.push_back(*shader1);
 
 	directionalShadowShader.CreateFromFiles("Shaders/directional_shadow_map.vert", "Shaders/directional_shadow_map.frag");
+	omniShadowShader.CreateFromFiles("Shaders/omni_shadow_map.vert", "Shaders/omni_shadow_map.geom", "Shaders/omni_shadow_map.frag");
 }
 
 void RenderScene()
@@ -192,7 +194,30 @@ void DirectionalShadowMapPass(DirectionalLight* light)
 	directionalShadowShader.SetDirectionalLightTransform(&l);
 
 	RenderScene();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
+
+void omniShadowMapPass(PointLight* light)
+{
+	omniShadowShader.UseShader();
+
+	glViewport(0, 0, light->getShadowMap()->getShadowWidth(), light->getShadowMap()->getShadowHeight());
+
+	light->getShadowMap()->write();
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	uniformModel = omniShadowShader.GetModelLocation();
+	uniformOmniLightPos = omniShadowShader.GetOmniLightPosLocation();
+	uniformFarPlane = omniShadowShader.GetFarPlaneLocation();
+
+	auto l = light->CalculateLightTransform();
+
+	glUniform3f(uniformOmniLightPos, light->getPosition().x, light->getPosition().y, light->getPosition().z);
+	glUniform1f(uniformFarPlane, light->getFarPlane());
+	omniShadowShader.SetLightMatrices(light->CalculateLightTransform());
+
+	RenderScene();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -243,7 +268,7 @@ int main()
 	CreateObjects();
 	CreateShaders();
 
-	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -60.0f, 0.0f, 2.0f, 0.05f);
+	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -60.0f, 0.0f, 6.5f, 0.07f);
 
 	brickTexture = Texture((char *)"Textures/brick.png");
 	brickTexture.LoadTexture();
@@ -260,36 +285,42 @@ int main()
 		0.1f, 0.3f,
 		0.0f, -15.0f, -10.0f);
 
-	pointLights[0] = PointLight(0.0f, 0.0f, 1.0f,
-		0.0f, 0.1f,
-		0.0f, 0.0f, 0.0f,
-		0.3f, 0.2f, 0.1f);
+	/*pointLights[0] = PointLight(1024, 1024,
+							0.01f, 100.0f, 0.0f, 0.0f, 1.0f,
+							0.0f, 0.1f,
+							0.0f, 0.0f, 0.0f,
+							0.3f, 0.2f, 0.1f);
 	pointLightCount++;
-	pointLights[1] = PointLight(0.0f, 1.0f, 0.0f,
-		0.0f, 0.1f,
-		-4.0f, 2.0f, 0.0f,
-		0.3f, 0.1f, 0.1f);
-	pointLightCount++;
+	pointLights[1] = PointLight(1024, 1024,
+								0.01f, 100.0f, 0.0f, 1.0f, 0.0f,
+								0.0f, 0.1f,
+								-4.0f, 2.0f, 0.0f,
+								0.3f, 0.1f, 0.1f);
+	pointLightCount++;*/
 
 
-	spotLights[0] = SpotLight(1.0f, 1.0f, 1.0f,
-		0.0f, 2.0f,
-		0.0f, 0.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		20.0f);
+	spotLights[0] = SpotLight(1024, 1024,
+						0.01f, 100.0f, 
+						1.0f, 1.0f, 1.0f,
+							0.0f, 2.0f,
+							0.0f, 0.0f, 0.0f,
+							0.0f, -1.0f, 0.0f,
+							1.0f, 0.0f, 0.0f,
+							20.0f);
 	spotLightCount++;
-	spotLights[1] = SpotLight(1.0f, 1.0f, 1.0f,
-		0.0f, 1.0f,
-		0.0f, -1.5f, 0.0f,
-		-100.0f, -1.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		20.0f);
+	spotLights[1] = SpotLight(1024, 1024,
+							0.01f, 100.0f,
+							1.0f, 1.0f, 1.0f,
+							0.0f, 1.0f,
+							0.0f, -1.5f, 0.0f,
+							-100.0f, -1.0f, 0.0f,
+							1.0f, 0.0f, 0.0f,
+							20.0f);
 	spotLightCount++;
 
 	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
 		uniformSpecularIntensity = 0, uniformShininess = 0;
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (GLfloat)mainWindow.GetBufferWidth() / mainWindow.GetBufferHeight(), 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(60.0f), (GLfloat)mainWindow.GetBufferWidth() / mainWindow.GetBufferHeight(), 0.1f, 100.0f);
 
 	// Loop until window closed
 	while (!mainWindow.GetShouldClose())
@@ -306,6 +337,16 @@ int main()
 
 
 		DirectionalShadowMapPass(&mainLight);
+		for (size_t i = 0; i < pointLightCount; i++)
+		{
+			omniShadowMapPass(&pointLights[i]);
+		}
+
+		for (size_t i = 0; i < spotLightCount; i++)
+		{
+			omniShadowMapPass(&spotLights[i]);
+		}
+
 		RenderPass(camera.CalculateViewMatrix(), projection);
 
 		mainWindow.SwapBuffers();
