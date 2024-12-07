@@ -21,9 +21,4 @@ public:
 protected:
 	GLuint FBO, shadowMap;
 	GLuint shadowWidth, shadowHeight;
-
-
-
-
 };
-
