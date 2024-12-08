@@ -2,8 +2,11 @@
 
 ![](https://github.com/Sander-Jannes/OpenGL/blob/main/demo.gif)
 
-## Lights
+## Belichting
 ![](https://github.com/Sander-Jannes/OpenGL/blob/main/lights.png)
 
-## "Realistic" textures
+## "Realistische" textures
 ![](https://github.com/Sander-Jannes/OpenGL/blob/main/brick.png)
+
+## Certificaat
+![](https://github.com/Sander-Jannes/OpenGL/blob/main/cerfificaat.jpg)
